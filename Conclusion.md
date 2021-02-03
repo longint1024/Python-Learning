@@ -1,6 +1,14 @@
 # 专栏分析
 
+
+
 ## 基本数据结构
+
+### 函数
+
+既然python是函数式编程，关于函数当然应该放在第一部分
+
+在T480滑动窗口中位数中我才踩到这样的坑：对python函数的调用，加了括号才会完成了函数执行过程，不加括号则可以理解为一个指针变量，指向函数所在地址！
 
 ### 列表、元组与集合
 
@@ -72,6 +80,39 @@ class Solution:
 
 ### 队列
 
+#### Sliding window
+
+经典例题，替换后的最长重复字符
+
+经典在于，窗长也是在变的，但由于我们要的就是一个窗长的最大值，所以窗长不需要变小，一直变大就好了。
+
+```python
+#T424 替换后的最长重复字符
+class Solution:
+    def characterReplacement(self, s: str, k: int) -> int:
+        def c2n(c):
+            return ord(c)-ord('A')
+        if len(s)<=k:
+            return len(s)
+        slide, p = k, 0
+        abc = [0 for i in range(26)]
+        for i in range(k):
+            abc[c2n(s[i])] += 1
+        maxabc = max(abc)
+        while p+slide-1<len(s)-1:
+            index = c2n(s[p+slide])
+            abc[index] += 1
+            maxabc = max(abc[index],maxabc)
+            if slide+1-maxabc>k:
+                abc[c2n(s[p])] -= 1
+                p += 1
+            else:
+                slide += 1
+        return slide
+```
+
+
+
 #### 双向队列
 
 经典的是双向队列解决滑动窗口最大值问题。滑动窗口连续和最大可以用前缀和解决，滑动窗口内最大值可以在线性时间复杂度内实现，实现方式有双向队列和动态规划。
@@ -106,7 +147,7 @@ class Solution:
         return ans
 ```
 
-### 指针、邻接表与拷贝（+哈希）
+### 指针、邻接表与拷贝（+字典哈希）
 
 这一题就非常好的展示了内存访问、邻接表使用与深浅拷贝之间的关系。需要注意的是哈希表的用法，本题关于哈希表的写法是非常规范且简洁的
 
@@ -203,7 +244,7 @@ print(nums)
 
 
 
-### 堆排序与优先队列
+### 堆排序与优先队列（+counter哈希）
 
 下面给出的是第23题合并k个有序列表的优先队列解法：
 
@@ -235,6 +276,87 @@ class Solution:
 【注意】默认关键字是**越小**越好，最小的数字最先出队。
 
 这里要注意的是，q.put放进去的应当是一个元组，不然拿出来的时候会有问题。并且我测试python2和python3的优先队列在这里有区别，Python2好像是支持放不可哈希的关键字的（不参与排序）。但是python3似乎并不行。这可能和排序关键字的指定有关，我没有仔细研究。
+
+在T480滑动窗口中位数中我们经历了平衡树一般的折磨，这里使用python3的collection中的Counter来完成哈希。并使用heapq自带的一系列函数来完成堆的创建与维护（针对列表）
+
+```python
+heapq.heappush(List) #入堆
+heapq.heappop(List) #弹堆
+heapq.heapify(List) #建堆，个人理解，大数组建堆会比依次插入快得多
+```
+
+和优先队列一模一样，python没有大头堆，大头堆可以用负元素小头堆实现。多次查询中位数的典型实现方案就是分拆为大头堆和小头堆，实现“对三角”这样的结构，从而快速得出中位数。
+
+```python
+#T480 滑动窗口中位数
+class DualHeap:
+    def __init__(self):
+        self.small, self.large = [], []
+        self.delay = collections.Counter()
+        self.smallSize, self.largeSize = 0, 0
+    def prune(self, heap: List[int]):
+        while heap:
+            num = heap[0]
+            if heap is self.small:
+                num = -num
+            if num in self.delay:
+                self.delay[num] -= 1
+                if self.delay[num] == 0:
+                    self.delay.pop(num)
+                heapq.heappop(heap)
+            else:
+                break
+    def makeBalance(self):
+        if self.smallSize > self.largeSize + 1:
+            num = -self.small[0]
+            heapq.heappush(self.large, num)
+            heapq.heappop(self.small)
+            self.smallSize -= 1
+            self.largeSize += 1
+            self.prune(self.small)
+        elif self.smallSize < self.largeSize:
+            num = self.large[0]
+            heapq.heappush(self.small, -num)
+            heapq.heappop(self.large)
+            self.smallSize += 1
+            self.largeSize -= 1
+            self.prune(self.large)
+    def insert(self, num:int):
+        if (not self.small) or num<= -self.small[0]:
+            heapq.heappush(self.small, -num)
+            self.smallSize += 1
+        else:
+            heapq.heappush(self.large, num)
+            self.largeSize += 1
+        self.makeBalance()
+    def erase(self, num:int):
+        self.delay[num] += 1
+        if num <= -self.small[0]:
+            self.smallSize -= 1
+            if num == -self.small[0]:
+                self.prune(self.small)
+        else:
+            self.largeSize -= 1
+            if num == self.large[0]:
+                self.prune(self.large)
+        self.makeBalance()
+    def mid(self):
+        if self.smallSize>self.largeSize:
+            return -self.small[0]
+        else:
+            return (self.large[0]-self.small[0])/2
+class Solution:
+    def medianSlidingWindow(self, nums: List[int], k: int) -> List[float]:
+        dq = DualHeap()
+        for i in nums[:k]:
+            dq.insert(i)
+        ans = [dq.mid()]
+        for i in range(k,len(nums)):
+            dq.insert(nums[i])
+            dq.erase(nums[i-k])
+            ans.append(dq.mid())
+        return ans
+```
 
 
 
@@ -926,7 +1048,7 @@ class Solution:
         return a[0][0] % 1000000007
 ```
 
-### 位运算(+python3 reduce)
+### 位运算(与python3 reduce)
 
 ```python
 #求数组中的两个不同元素（求一个不同元素的变化，位运算）
@@ -948,7 +1070,7 @@ class Solution:
 
 【注意】学习reduce的用法，另外，python3中reduce放在functools里面，而不是像Python2那样作为内置函数
 
-### 高精度乘法
+### 高精度乘法与FFT
 
 真python式写法：str(int(num1)*int(num2))
 
