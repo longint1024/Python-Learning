@@ -1117,6 +1117,12 @@ def gcd(a:int,b:int)->int:
 
 
 
+**T643 子数组最大平均数Ⅰ //python3**
+
+【思路】sliding window，或者说模拟吧
+
+
+
 **T657** **机器人能否回到原点** **//python3**
 
 没啥好说的，s.count(<char>)是真的好用。
