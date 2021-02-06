@@ -203,6 +203,12 @@ class Solution(object):
 
 ### 快速排序
 
+一般情况下使用：负号代表降序
+
+```python
+List.sort(key=lambda x:(-x[0],x[1]))
+```
+
 面试题40的最优解法：快速选择算法
 
 ### 归并排序（分治）
