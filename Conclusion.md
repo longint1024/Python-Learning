@@ -1,8 +1,23 @@
 #  专栏分析
 
+## 基本语法与数据结构
+
+### 语法
+
+python的写法非常自由，这也导致了许多看似相同的写法会有非常大的差别
+
+```python
+a, b, c = 3, 4, 5
+b, c = a+b, b+c
+
+a, b, c = 3, 4, 5
+b = a+b
+c = b+c
+```
+
+上面的代码看起来是一样的，但是结果不同，上面的结果是c=9，下面的结果是c=12，因为python里面用逗号分开的赋值是同时进行的，没有先后顺序的关系。
 
 
-## 基本数据结构
 
 ### 函数
 
@@ -82,6 +97,27 @@ class Solution:
 ```
 
 【注意】这里细节有两个，首先if not l2是必须的，因为l2有可能本身就是空的，所以要写在最前面。l1不停地向后的过程中，有可能变成None而退出第一个内层循环，这时要注意判断并退出，所以后面跟的if not l1也是必须的。
+
+### 前缀和、差分数组
+
+前缀和的题目经常做，这里有经典的差分数组应用：
+
+```python
+#T1109 航班预定统计
+class Solution:
+    def corpFlightBookings(self, bookings: List[List[int]], n: int) -> List[int]:
+        diff, ans = [0]*n, [0]*n
+        for i in bookings:
+            diff[i[0]-1] += i[2]
+            if i[1]<n:
+                diff[i[1]] -= i[2]
+        ans[0] = diff[0]
+        for i in range(1,n):
+            ans[i] = ans[i-1]+diff[i]
+        return ans
+```
+
+
 
 ### 栈
 
